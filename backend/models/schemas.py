@@ -1,10 +1,10 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 
 class OutreachRequest(BaseModel):
     icp: str                          # e.g. "We sell cybersecurity training to Series B startups"
     target_company: str               # e.g. "Stripe"
-    recipient_email: EmailStr         # Where to send the outreach email
+    recipient_email: str              # Where to send the outreach email
     sender_name: str = "Alex"         # Name to sign the email with
 
 class SignalData(BaseModel):
