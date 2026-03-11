@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { runOutreach, OutreachRequest } from '../lib/api';
+import { runOutreach, OutreachRequest } from '@/lib/api';
 
 const PIPELINE_STEPS = [
   { icon: "⚡", label: "Harvesting signals", desc: "SerpAPI + NewsAPI" },
