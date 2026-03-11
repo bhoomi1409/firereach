@@ -8,7 +8,7 @@
 
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688?style=flat-square&logo=fastapi) ![Next.js](https://img.shields.io/badge/Next.js-14-black?style=flat-square&logo=next.js) ![Groq](https://img.shields.io/badge/Groq-Llama_3.3_70B-F55036?style=flat-square) ![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python)
 
-[Live Demo](https://your-vercel-url.vercel.app) · [API Docs](https://your-render-url.onrender.com/docs) · [Submission](https://docs.google.com/forms/...)
+[Live Demo](https://firereach-omega.vercel.app) · [API Docs](https://firereach-cgko.onrender.com/docs) · [GitHub](https://github.com/bhoomi1409/firereach)
 
 </div>
 
