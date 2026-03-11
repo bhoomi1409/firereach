@@ -69,28 +69,41 @@ SELLER ICP:
 {icp}
 """
     
-    body_prompt = f"""Write a professional cold email body using these signals and account brief.
+    body_prompt = f"""Write a hyper-personalized cold email body using these signals and account brief.
 
 {signals_summary}
 
 STRUCTURE:
-Paragraph 1: Open with specific signal observation and its business implication
-Paragraph 2: Connect to pain point with another signal, explain the risk/opportunity
-Paragraph 3: Value proposition with specific outcome or proof point
-Paragraph 4: Single clear call-to-action
+Paragraph 1: Open with specific signal observation (use exact numbers/names from signals) and its direct business implication
+Paragraph 2: Connect to a second signal, explain the hidden risk or opportunity they might not see
+Paragraph 3: Value proposition tied to their specific situation with concrete outcome
+Paragraph 4: Single clear, low-friction call-to-action question
 
-RULES:
-- Start with "Hi there," (professional greeting)
-- 3-4 paragraphs, 180-200 words total
-- Cite 2-3 specific signals with context
-- Professional, consultative tone (peer-to-peer, not salesy)
-- Include specific numbers or outcomes when possible
-- End with ONE clear, low-friction question
-- Sign off with: {sender_name}
+PERSONALIZATION RULES:
+- Reference at least 2-3 specific signals by name/number (e.g., "$300M Series E", "Carlos Santovena", "80 countries")
+- Connect signals to their business context (e.g., "With 80-country operations, security complexity grows exponentially")
+- Use their company's actual tech/strategy (e.g., "Your AWS infrastructure choice shows...")
+- Mention specific roles/people if available in signals
+- Tie ICP value prop to their exact growth stage
+
+WRITING RULES:
+- NO greeting (start directly with signal observation)
+- 150-180 words total
+- Professional, peer-to-peer tone (senior consultant to executive)
+- Include specific numbers from signals
+- End with ONE question that requires minimal effort to answer
+- Sign off with just: {sender_name}
 - Use proper paragraph breaks (double line breaks)
-- NO "Best regards", NO "Hope this email finds you well"
 
-TONE: Senior consultant speaking to peer executive. Knowledgeable, helpful, direct.
+BANNED PHRASES:
+- "Hope this email finds you well"
+- "I wanted to reach out"
+- "Touch base"
+- "Circle back"
+- "Hi there" / "Hello"
+- "Best regards"
+
+TONE: Knowledgeable peer who's done their homework. Confident, helpful, direct.
 
 Return plain email text only. No JSON. No subject line. No formatting markers."""
     
