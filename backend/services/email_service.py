@@ -1,4 +1,3 @@
-import resend
 import os
 import smtplib
 from email.mime.text import MIMEText
@@ -7,14 +6,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-resend.api_key = os.getenv("RESEND_API_KEY")
-SENDER_EMAIL = os.getenv("SENDER_EMAIL", "FireReach <onboarding@resend.dev>")
 SMTP_PASSWORD = os.getenv("SMTP_APP_PASSWORD")
 SMTP_USER = os.getenv("SMTP_USER")
 
 def send_email(to_email: str, subject: str, body: str) -> dict:
     """
-    Send email — tries Gmail SMTP first, falls back to Resend.
+    Send email via Gmail SMTP.
     Returns {"sent": bool, "message": str}
     """
     
@@ -27,7 +24,7 @@ def send_email(to_email: str, subject: str, body: str) -> dict:
     </html>
     """
     
-    # --- SMTP (Gmail) - PRIMARY ---
+    # --- SMTP (Gmail) ---
     if SMTP_USER and SMTP_PASSWORD:
         try:
             msg = MIMEMultipart('alternative')
@@ -46,22 +43,7 @@ def send_email(to_email: str, subject: str, body: str) -> dict:
                 server.sendmail(SMTP_USER, to_email, msg.as_string())
             return {"sent": True, "message": f"Sent via Gmail SMTP to {to_email}"}
         except Exception as e:
-            # Try Resend as fallback
-            pass
-    
-    # --- RESEND FALLBACK ---
-    if resend.api_key:
-        try:
-            params = {
-                "from": SENDER_EMAIL,
-                "to": [to_email],
-                "subject": subject,
-                "html": html_body,
-            }
-            email = resend.Emails.send(params)
-            return {"sent": True, "message": f"Sent via Resend to {to_email}"}
-        except Exception as e:
-            return {"sent": False, "message": f"Resend failed: {str(e)}"}
+            return {"sent": False, "message": f"Gmail SMTP failed: {str(e)}"}
     
     # --- NO EMAIL CONFIGURED (dev mode) ---
-    return {"sent": False, "message": "No email service configured. Set SMTP_USER/SMTP_APP_PASSWORD or RESEND_API_KEY."}
+    return {"sent": False, "message": "No email service configured. Set SMTP_USER/SMTP_APP_PASSWORD."}
