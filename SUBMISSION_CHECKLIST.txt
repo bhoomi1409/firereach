@@ -1,0 +1,104 @@
+🏆 FIREREACH - RABBITT AI SUBMISSION CHECKLIST
+==============================================
+
+BEFORE YOU SUBMIT - VERIFY THESE:
+----------------------------------
+
+✅ BACKEND CHECKLIST:
+□ All 4 API keys added to backend/.env
+□ Backend starts without errors: uvicorn main:app --reload
+□ Health check works: curl http://localhost:8000/health
+□ Returns: {"status": "ok", "service": "FireReach"}
+
+✅ FRONTEND CHECKLIST:
+□ npm install completed successfully
+□ .env.local has correct API URL
+□ Frontend starts: npm run dev
+□ Opens at http://localhost:3000
+□ Form displays correctly (dark theme)
+
+✅ FULL PIPELINE TEST:
+□ Fill form with Rabbitt Challenge data:
+  - ICP: "We sell high-end cybersecurity training to Series B startups."
+  - Target: "Deel"
+  - Email: YOUR_ACTUAL_EMAIL
+  - Name: Alex
+□ Click "Launch Agent 🚀"
+□ See 3 steps execute:
+  - 🔍 Harvesting signals...
+  - 🧠 Generating brief...
+  - 📧 Sending email...
+□ Results page shows:
+  - Execution log with all steps
+  - Signal cards with data
+  - Account brief (2 paragraphs)
+  - Email preview with subject + body
+  - Send status: ✅ Sent
+□ Email arrives in your inbox
+□ Email cites at least 2 specific signals
+
+✅ CODE QUALITY:
+□ No syntax errors in Python files
+□ No TypeScript errors in frontend
+□ All imports working correctly
+□ CORS configured properly
+
+✅ DOCUMENTATION:
+□ README.md explains the project
+□ DOCS.md has technical details
+□ QUICKSTART.txt for easy setup
+□ All files properly structured
+
+✅ DEPLOYMENT READY:
+□ render.yaml configured for backend
+□ vercel.json configured for frontend
+□ docker-compose.yml for local deployment
+□ .gitignore excludes .env files
+
+✅ RABBITT CHALLENGE REQUIREMENTS:
+□ 3-tool sequential pipeline implemented
+□ tool_signal_harvester: Deterministic (SerpAPI + NewsAPI)
+□ tool_research_analyst: AI synthesis (Groq Llama 3.3 70B)
+□ tool_outreach_automated_sender: AI + auto-send (Resend)
+□ Zero template policy: emails cite specific signals
+□ No human approval loop
+□ Production-quality error handling
+□ Clean, working UI
+
+
+FINAL TEST BEFORE SUBMISSION:
+------------------------------
+1. Fresh terminal, start backend
+2. Fresh terminal, start frontend
+3. Run complete test with Deel
+4. Verify email received
+5. Check email quality (cites 2+ signals)
+6. Take screenshots of:
+   - Running backend terminal
+   - Running frontend terminal
+   - Form filled out
+   - Results page
+   - Email received
+
+
+SUBMISSION PACKAGE:
+-------------------
+□ GitHub repo with all code
+□ README.md as landing page
+□ Working demo (deployed or video)
+□ Screenshots of successful test
+□ Your contact info in submission
+
+
+YOU'RE READY WHEN:
+------------------
+✅ Backend runs without errors
+✅ Frontend displays correctly
+✅ Full pipeline completes successfully
+✅ Email arrives with real signals
+✅ Code is clean and documented
+✅ Ready to deploy to production
+
+
+GOOD LUCK! 🚀
+This is production-quality work. You've got this!

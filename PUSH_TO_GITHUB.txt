@@ -1,0 +1,40 @@
+🚀 PUSH TO GITHUB - STEP BY STEP
+=================================
+
+✅ Git initialized and committed!
+
+NOW DO THIS:
+
+1. Go to GitHub: https://github.com/new
+
+2. Create new repository:
+   - Name: firereach
+   - Description: Autonomous Outreach Engine - AI-powered signal harvesting and email automation
+   - Public (so Rabbitt AI can see it)
+   - DO NOT check "Initialize with README"
+
+3. After creating, GitHub will show you commands. Run these:
+
+   cd firereach
+   git remote add origin https://github.com/YOUR-USERNAME/firereach.git
+   git branch -M main
+   git push -u origin main
+
+4. Replace YOUR-USERNAME with your actual GitHub username!
+
+EXAMPLE:
+If your GitHub username is "bhoomimahajan":
+git remote add origin https://github.com/bhoomimahajan/firereach.git
+git branch -M main
+git push -u origin main
+
+DONE! Your code will be on GitHub.
+
+NEXT STEPS:
+1. Deploy backend to Render (use your GitHub repo)
+2. Deploy frontend to Vercel (use your GitHub repo)
+3. Test live URLs
+4. Submit to Rabbitt AI with GitHub link
+
+YOUR GITHUB URL WILL BE:
+https://github.com/YOUR-USERNAME/firereach
