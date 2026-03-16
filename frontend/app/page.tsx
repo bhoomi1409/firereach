@@ -2,49 +2,96 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { runOutreach, OutreachRequest } from './api';
+
+interface DiscoverRequest {
+  icp_text: string;
+  target_count: number;
+}
+
+interface ParsedICP {
+  what_we_do: string;
+  target_industry: string;
+  target_stage: string;
+  pain_keyword: string;
+  solution_keyword: string;
+  buyer_titles: string[];
+  min_headcount: number;
+  max_headcount: number;
+  threshold: number;
+}
+
+interface DiscoveredCompany {
+  name: string;
+  domain: string;
+  reason: string;
+  approved: boolean;
+}
+
+interface DiscoverResponse {
+  session_id: string;
+  icp_parsed: ParsedICP;
+  companies: DiscoveredCompany[];
+}
 
 const PIPELINE_STEPS = [
-  { icon: "⚡", label: "Harvesting signals", desc: "SerpAPI + NewsAPI" },
-  { icon: "🧠", label: "Generating brief", desc: "Llama 3.3 70B" },
-  { icon: "📡", label: "Sending email", desc: "Gmail SMTP" },
+  { icon: "🔍", label: "Parsing ICP", desc: "Groq LLM Analysis" },
+  { icon: "🏢", label: "Finding companies", desc: "Serper Discovery" },
+  { icon: "📋", label: "Building list", desc: "Company Profiles" },
 ];
 
 export default function HomePage() {
   const router = useRouter();
-  const [form, setForm] = useState<OutreachRequest>({
-    icp: '',
-    target_company: '',
-    recipient_email: '',
-    sender_name: 'Alex'
-  });
+  const [icpText, setIcpText] = useState('We build AI voice agents for Series B fintech companies. They struggle with scaling customer support and need to reduce call times by 60%.');
+  const [targetCount, setTargetCount] = useState(5);
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(-1);
   const [error, setError] = useState('');
 
-  const handleSubmit = async () => {
-    if (!form.icp || !form.target_company || !form.recipient_email || !form.sender_name) {
-      setError("All fields are required");
+  const handleDiscover = async () => {
+    if (!icpText.trim() || icpText.trim().length < 20) {
+      setError("Please describe your service and ideal customer in at least 20 characters");
       return;
     }
+    
+    // Prevent double-click race condition
+    if (loading) return;
+    
     setError("");
     setLoading(true);
 
     // Simulate step progression
     setCurrentStep(0);
-    const stepTimer1 = setTimeout(() => setCurrentStep(1), 3000);
-    const stepTimer2 = setTimeout(() => setCurrentStep(2), 6000);
+    const stepTimer1 = setTimeout(() => setCurrentStep(1), 2000);
+    const stepTimer2 = setTimeout(() => setCurrentStep(2), 4000);
 
     try {
-      const result = await runOutreach(form);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/discover`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          icp_text: icpText,
+          target_count: targetCount
+        } as DiscoverRequest),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Discovery failed');
+      }
+
+      const result: DiscoverResponse = await response.json();
+      
       clearTimeout(stepTimer1);
       clearTimeout(stepTimer2);
-      localStorage.setItem("firereach_result", JSON.stringify(result));
-      router.push("/result");
+      
+      localStorage.setItem("firereach_session", JSON.stringify(result));
+      router.push("/companies");
     } catch (err: any) {
       clearTimeout(stepTimer1);
       clearTimeout(stepTimer2);
-      setError(err.message || "Agent failed. Check API keys.");
+      setError(err.message || "Discovery failed. Check your ICP description.");
       setLoading(false);
       setCurrentStep(-1);
     }
@@ -62,14 +109,14 @@ export default function HomePage() {
           <div className="flex items-center gap-3 mb-4">
             <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse-orange" />
             <span className="font-mono text-xs text-orange-500/70 tracking-widest uppercase">
-              Autonomous Outreach Engine v1.0
+              FireReach v4.0 — Fully Autonomous
             </span>
           </div>
           <h1 className="text-5xl font-bold tracking-tight mb-3">
             Fire<span className="text-orange-500 glow-orange-text">Reach</span>
           </h1>
           <p className="text-slate-400 text-lg leading-relaxed">
-            Drop your ICP. We find the signal, write the email, hit send.
+            One ICP text → discover → approve → 7 signals → email + brochure → send
             <span className="text-orange-500/70"> Zero templates. Zero humans.</span>
           </p>
         </div>
@@ -99,65 +146,46 @@ export default function HomePage() {
         </div>
 
         {/* Form */}
-        <div className="space-y-4">
+        <div className="space-y-6">
           
-          {/* ICP */}
-          <div className="space-y-1.5">
+          {/* ICP Text Input */}
+          <div className="space-y-2">
             <label className="font-mono text-xs text-slate-400 tracking-wider uppercase flex items-center gap-2">
-              <span className="text-orange-500">01</span> Ideal Customer Profile
+              <span className="text-orange-500">01</span> Describe your service and ideal customer
             </label>
             <textarea
-              rows={3}
-              placeholder="We sell high-end cybersecurity training to Series B startups."
-              value={form.icp}
-              onChange={e => setForm(p => ({ ...p, icp: e.target.value }))}
+              rows={4}
+              placeholder="We build AI voice agents for Series B fintech companies. They struggle with scaling customer support and need to reduce call times by 60%."
+              value={icpText}
+              onChange={e => setIcpText(e.target.value)}
               disabled={loading}
               className="w-full bg-slate-900/60 border border-slate-700/60 rounded-lg px-4 py-3 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-orange-500/50 focus:bg-slate-900 resize-none transition-all disabled:opacity-40"
             />
-          </div>
-
-          {/* Target Company */}
-          <div className="space-y-1.5">
-            <label className="font-mono text-xs text-slate-400 tracking-wider uppercase flex items-center gap-2">
-              <span className="text-orange-500">02</span> Target Company
-            </label>
-            <input
-              type="text"
-              placeholder="Deel"
-              value={form.target_company}
-              onChange={e => setForm(p => ({ ...p, target_company: e.target.value }))}
-              disabled={loading}
-              className="w-full bg-slate-900/60 border border-slate-700/60 rounded-lg px-4 py-3 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-orange-500/50 focus:bg-slate-900 transition-all disabled:opacity-40"
-            />
-          </div>
-
-          {/* Two columns */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="font-mono text-xs text-slate-400 tracking-wider uppercase flex items-center gap-2">
-                <span className="text-orange-500">03</span> Send To
-              </label>
-              <input
-                type="email"
-                placeholder="prospect@company.com"
-                value={form.recipient_email}
-                onChange={e => setForm(p => ({ ...p, recipient_email: e.target.value }))}
-                disabled={loading}
-                className="w-full bg-slate-900/60 border border-slate-700/60 rounded-lg px-4 py-3 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-orange-500/50 focus:bg-slate-900 transition-all disabled:opacity-40"
-              />
+            <div className="text-xs text-slate-500 font-mono">
+              {icpText.length}/200+ characters • Be specific about industry, company stage, and pain points
             </div>
-            <div className="space-y-1.5">
-              <label className="font-mono text-xs text-slate-400 tracking-wider uppercase flex items-center gap-2">
-                <span className="text-orange-500">04</span> Your Name
-              </label>
+          </div>
+
+          {/* Target Count Slider */}
+          <div className="space-y-2">
+            <label className="font-mono text-xs text-slate-400 tracking-wider uppercase flex items-center gap-2">
+              <span className="text-orange-500">02</span> Target {targetCount} companies
+            </label>
+            <div className="flex items-center gap-4">
+              <span className="text-xs text-slate-500 font-mono">1</span>
               <input
-                type="text"
-                placeholder="Alex"
-                value={form.sender_name}
-                onChange={e => setForm(p => ({ ...p, sender_name: e.target.value }))}
+                type="range"
+                min="1"
+                max="20"
+                value={targetCount}
+                onChange={e => setTargetCount(parseInt(e.target.value))}
                 disabled={loading}
-                className="w-full bg-slate-900/60 border border-slate-700/60 rounded-lg px-4 py-3 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-orange-500/50 focus:bg-slate-900 transition-all disabled:opacity-40"
+                className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
               />
+              <span className="text-xs text-slate-500 font-mono">20</span>
+            </div>
+            <div className="text-xs text-slate-500 font-mono">
+              System will discover {targetCount} companies matching your ICP for approval
             </div>
           </div>
 
@@ -170,7 +198,7 @@ export default function HomePage() {
 
           {/* Submit */}
           <button
-            onClick={handleSubmit}
+            onClick={handleDiscover}
             disabled={loading}
             className="w-full mt-2 py-4 px-6 bg-orange-500 hover:bg-orange-400 disabled:opacity-50 disabled:cursor-not-allowed text-black font-bold text-sm tracking-wide rounded-lg transition-all duration-200 glow-orange flex items-center justify-center gap-3 group"
           >
@@ -183,7 +211,7 @@ export default function HomePage() {
               </>
             ) : (
               <>
-                <span>Launch Agent</span>
+                <span>🔍 Find Companies</span>
                 <span className="group-hover:translate-x-1 transition-transform">→</span>
               </>
             )}
@@ -193,10 +221,10 @@ export default function HomePage() {
         {/* Footer */}
         <div className="mt-10 pt-6 border-t border-slate-800/50 flex items-center justify-between">
           <span className="font-mono text-[10px] text-slate-600">
-            Signal → Research → Send
+            Parse → Discover → Approve → Execute
           </span>
           <span className="font-mono text-[10px] text-slate-600">
-            Groq · SerpAPI · Gmail SMTP
+            Groq · Serper · Hunter · Gmail SMTP
           </span>
         </div>
       </div>

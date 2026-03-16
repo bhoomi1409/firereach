@@ -3,34 +3,59 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+interface Signal {
+  signal_id: string;
+  type: string;
+  summary: string;
+  detected_at: string;
+  type_weight: number;
+  freshness: number;
+  icp_relevance: number;
+  final_score: number;
+}
+
+interface ContactResult {
+  email: string;
+  first_name: string;
+  last_name: string;
+  title: string;
+  email_status: string;
+  source: string;
+  confidence: number;
+}
+
+interface CompanyResult {
+  company_name: string;
+  domain: string;
+  icp_score: number;
+  should_send: boolean;
+  skip_reason?: string;
+  signals_used: Signal[];
+  contact?: ContactResult;
+  email_subject?: string;
+  email_body?: string;
+  brochure_html?: string;
+  sent: boolean;
+  send_message: string;
+  log: string[];
+}
+
+interface SkippedCompany {
+  company_name: string;
+  skip_reason: string;
+}
+
 interface BatchResult {
   batch_id: string;
+  session_id: string;
   icp_summary: string;
   companies_discovered: number;
+  companies_approved: number;
   companies_scored: number;
   companies_passed_icp: number;
-  companies_contacted: number;
-  results: Array<{
-    company_name: string;
-    icp_score: number;
-    should_send: boolean;
-    skip_reason?: string;
-    contact_email?: string;
-    contact_name?: string;
-    contact_title?: string;
-    top_signals: string[];
-    email_subject?: string;
-    email_body?: string;
-    ppt_generated?: boolean;
-    ppt_filename?: string;
-    sent: boolean;
-    send_message: string;
-    log: string[];
-  }>;
-  skipped: Array<{
-    company_name: string;
-    skip_reason: string;
-  }>;
+  emails_sent: number;
+  results: CompanyResult[];
+  skipped: SkippedCompany[];
 }
 
 export default function ResultPage() {
@@ -84,7 +109,8 @@ export default function ResultPage() {
         {/* Batch Summary */}
         <div className="mb-8 p-6 bg-slate-950/80 border border-slate-800 rounded-xl">
           <h2 className="font-mono text-xs text-slate-500 tracking-widest uppercase mb-4 flex items-center gap-2">
-            <span className="text-orange-500">//</span> Batch Summary
+            <span className="text-orange-500">{"//"}
+</span> Batch Summary
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
@@ -96,8 +122,8 @@ export default function ResultPage() {
               <div className="text-xs text-slate-500 font-mono">Passed ICP</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-400">{result.companies_contacted}</div>
-              <div className="text-xs text-slate-500 font-mono">Contacted</div>
+              <div className="text-2xl font-bold text-green-400">{result.emails_sent}</div>
+              <div className="text-xs text-slate-500 font-mono">Emails Sent</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-red-400">{result.skipped.length}</div>
@@ -116,7 +142,8 @@ export default function ResultPage() {
           {/* Company List */}
           <div className="lg:col-span-1">
             <h2 className="font-mono text-xs text-slate-500 tracking-widest uppercase mb-3 flex items-center gap-2">
-              <span className="text-orange-500">//</span> Companies ({result.results.length + result.skipped.length})
+              <span className="text-orange-500">{"//"}
+</span> Companies ({result.results.length + result.skipped.length})
             </h2>
             
             {/* Contacted Companies */}
@@ -189,40 +216,49 @@ export default function ResultPage() {
                     </div>
                     <div>
                       <span className="text-slate-500">Contact:</span>
-                      <span className="ml-2 text-slate-300">{currentResult.contact_name || 'N/A'}</span>
+                      <span className="ml-2 text-slate-300">{currentResult.contact?.first_name} {currentResult.contact?.last_name || 'N/A'}</span>
                     </div>
                   </div>
-                  {currentResult.contact_email && (
+                  {currentResult.contact?.email && (
                     <div className="mt-2 text-sm">
                       <span className="text-slate-500">Email:</span>
-                      <span className="ml-2 text-slate-300">{currentResult.contact_email}</span>
+                      <span className="ml-2 text-slate-300">{currentResult.contact.email}</span>
                     </div>
                   )}
                 </div>
 
                 {/* Signals */}
-                {currentResult.top_signals.length > 0 && (
+                {currentResult.signals_used.length > 0 && (
                   <div className="p-5 bg-slate-900/60 border border-slate-800/60 rounded-xl">
                     <h4 className="font-mono text-xs text-slate-500 tracking-widest uppercase mb-3 flex items-center gap-2">
-                      <span className="text-orange-500">//</span> Top Signals ({currentResult.top_signals.length})
+                      <span className="text-orange-500">{"//"}
+</span> Top Signals ({currentResult.signals_used.length})
                     </h4>
                     <div className="space-y-2">
-                      {currentResult.top_signals.map((signal, i) => (
+                      {currentResult.signals_used.map((signal, i) => (
                         <div key={i} className="flex gap-3 p-3 bg-slate-950/60 border border-slate-800/40 rounded-lg">
                           <span className="text-orange-400 font-mono text-xs mt-0.5">#{i + 1}</span>
-                          <p className="text-xs text-slate-300 leading-relaxed">{signal}</p>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-xs font-mono text-slate-400">{signal.type}</span>
+                              <span className="text-xs text-slate-500">•</span>
+                              <span className="text-xs text-slate-500">Score: {signal.final_score.toFixed(1)}</span>
+                            </div>
+                            <p className="text-xs text-slate-300 leading-relaxed">{signal.summary}</p>
+                          </div>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {/* Email Preview */}
+                {/* Email & Brochure Preview */}
                 {currentResult.email_subject && (
                   <div className="p-5 bg-slate-900/60 border border-slate-800/60 rounded-xl">
                     <div className="flex items-center justify-between mb-4">
                       <h4 className="font-mono text-xs text-slate-500 tracking-widest uppercase flex items-center gap-2">
-                        <span className="text-orange-500">//</span> Generated Email & PPT
+                        <span className="text-orange-500">{"//"}
+</span> Generated Email & Brochure
                       </h4>
                       <div className="flex gap-2">
                         <span className={`font-mono text-xs px-2 py-1 rounded-full ${
@@ -232,9 +268,9 @@ export default function ResultPage() {
                         }`}>
                           {currentResult.sent ? "✓ Email Sent" : "✗ Send Failed"}
                         </span>
-                        {currentResult.ppt_generated && (
+                        {currentResult.brochure_html && (
                           <span className="font-mono text-xs px-2 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                            📊 PPT Attached
+                            📄 HTML Brochure
                           </span>
                         )}
                       </div>
@@ -252,21 +288,15 @@ export default function ResultPage() {
                       <p className="text-sm text-slate-300 mt-2 leading-relaxed whitespace-pre-wrap">{currentResult.email_body}</p>
                     </div>
 
-                    {/* PPT Info */}
-                    {currentResult.ppt_generated && (
-                      <div className="mb-4 p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg">
-                        <div className="flex items-center gap-2">
-                          <span className="text-blue-400">📊</span>
-                          <span className="text-sm text-blue-300">Personalized pitch deck generated</span>
-                        </div>
-                        <div className="text-xs text-slate-400 mt-1">
-                          Filename: {currentResult.ppt_filename}
-                        </div>
-                        <div className="text-xs text-slate-500 mt-1">
-                          • Company-specific problem analysis
-                          • Live signals integration
-                          • Custom ROI projections
-                          • Personalized next steps
+                    {/* Brochure Preview */}
+                    {currentResult.brochure_html && (
+                      <div className="mb-4">
+                        <span className="font-mono text-[10px] text-slate-500 uppercase tracking-wider">HTML Brochure Preview</span>
+                        <div className="mt-2 p-4 bg-slate-950/60 border border-slate-800/40 rounded-lg max-h-60 overflow-y-auto">
+                          <div 
+                            className="text-xs"
+                            dangerouslySetInnerHTML={{ __html: currentResult.brochure_html }}
+                          />
                         </div>
                       </div>
                     )}
