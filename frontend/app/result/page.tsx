@@ -2,25 +2,47 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { OutreachResponse } from '../../lib/api';
+
+interface BatchResult {
+  batch_id: string;
+  icp_summary: string;
+  companies_discovered: number;
+  companies_scored: number;
+  companies_passed_icp: number;
+  companies_contacted: number;
+  results: Array<{
+    company_name: string;
+    icp_score: number;
+    should_send: boolean;
+    skip_reason?: string;
+    contact_email?: string;
+    contact_name?: string;
+    contact_title?: string;
+    top_signals: string[];
+    email_subject?: string;
+    email_body?: string;
+    ppt_generated?: boolean;
+    ppt_filename?: string;
+    sent: boolean;
+    send_message: string;
+    log: string[];
+  }>;
+  skipped: Array<{
+    company_name: string;
+    skip_reason: string;
+  }>;
+}
 
 export default function ResultPage() {
   const router = useRouter();
-  const [result, setResult] = useState<OutreachResponse | null>(null);
-  const [visibleLog, setVisibleLog] = useState<string[]>([]);
+  const [result, setResult] = useState<BatchResult | null>(null);
+  const [selectedCompany, setSelectedCompany] = useState(0);
 
   useEffect(() => {
     const stored = localStorage.getItem("firereach_result");
     if (!stored) { router.push("/"); return; }
-    const data = JSON.parse(stored) as OutreachResponse;
+    const data = JSON.parse(stored) as BatchResult;
     setResult(data);
-
-    // Animate log entries one by one
-    data.execution_log.forEach((entry, i) => {
-      setTimeout(() => {
-        setVisibleLog(prev => [...prev, entry]);
-      }, i * 400);
-    });
   }, [router]);
 
   if (!result) return (
@@ -29,20 +51,13 @@ export default function ResultPage() {
     </div>
   );
 
-  const signals = result.signals;
-  const signalItems = [
-    { label: "Funding", value: signals.funding_rounds, icon: "💰" },
-    { label: "Hiring", value: signals.hiring_trends?.join(" · "), icon: "👥" },
-    { label: "Leadership", value: signals.leadership_changes, icon: "🎯" },
-    { label: "Tech Stack", value: signals.tech_stack_changes, icon: "⚙️" },
-    { label: "News", value: signals.news_mentions?.[0], icon: "📰" },
-  ].filter(s => s.value);
+  const currentResult = result.results[selectedCompany];
 
   return (
     <div className="min-h-screen grid-bg scanline">
       <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-orange-500/3 blur-[120px] rounded-full pointer-events-none" />
 
-      <div className="relative z-10 max-w-3xl mx-auto px-6 py-12">
+      <div className="relative z-10 max-w-5xl mx-auto px-6 py-12">
         
         {/* Header */}
         <div className="flex items-center justify-between mb-10">
@@ -50,12 +65,12 @@ export default function ResultPage() {
             <div className="flex items-center gap-2 mb-2">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
               <span className="font-mono text-xs text-green-500/70 tracking-widest uppercase">
-                Mission Complete
+                Autonomous Mission Complete
               </span>
             </div>
             <h1 className="text-3xl font-bold">
               Fire<span className="text-orange-500">Reach</span>
-              <span className="text-slate-500 font-normal text-xl ml-3">/ Results</span>
+              <span className="text-slate-500 font-normal text-xl ml-3">/ Batch Results</span>
             </h1>
           </div>
           <button
@@ -66,87 +81,235 @@ export default function ResultPage() {
           </button>
         </div>
 
-        {/* Agent Log */}
-        <div className="mb-6 p-5 bg-slate-950/80 border border-slate-800 rounded-xl">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-3 h-3 rounded-full bg-red-500/80" />
-            <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
-            <div className="w-3 h-3 rounded-full bg-green-500/80" />
-            <span className="font-mono text-xs text-slate-500 ml-2">agent.log</span>
+        {/* Batch Summary */}
+        <div className="mb-8 p-6 bg-slate-950/80 border border-slate-800 rounded-xl">
+          <h2 className="font-mono text-xs text-slate-500 tracking-widest uppercase mb-4 flex items-center gap-2">
+            <span className="text-orange-500">//</span> Batch Summary
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-orange-400">{result.companies_discovered}</div>
+              <div className="text-xs text-slate-500 font-mono">Discovered</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-400">{result.companies_passed_icp}</div>
+              <div className="text-xs text-slate-500 font-mono">Passed ICP</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-400">{result.companies_contacted}</div>
+              <div className="text-xs text-slate-500 font-mono">Contacted</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-red-400">{result.skipped.length}</div>
+              <div className="text-xs text-slate-500 font-mono">Skipped</div>
+            </div>
           </div>
-          <div className="space-y-1.5">
-            {visibleLog.map((entry, i) => (
-              <div key={i} className="font-mono text-xs text-slate-300 animate-slide-in flex gap-3">
-                <span className="text-slate-600 select-none">{String(i + 1).padStart(2, "0")}</span>
-                <span className={
-                  entry.includes("✅") ? "text-green-400" :
-                  entry.includes("⚠️") ? "text-yellow-400" :
-                  entry.includes("❌") ? "text-red-400" :
-                  entry.includes("🔍") || entry.includes("🧠") || entry.includes("📧") ? "text-orange-400" :
-                  "text-slate-300"
-                }>{entry}</span>
-              </div>
-            ))}
+          <div className="mt-4 pt-4 border-t border-slate-800">
+            <div className="text-xs text-slate-400">
+              <span className="font-mono text-orange-500">ICP:</span> {result.icp_summary}
+            </div>
           </div>
         </div>
 
-        {/* Signals Grid */}
-        <div className="mb-6">
-          <h2 className="font-mono text-xs text-slate-500 tracking-widest uppercase mb-3 flex items-center gap-2">
-            <span className="text-orange-500">//</span> Signals Harvested ({signalItems.length})
-          </h2>
-          <div className="grid gap-2">
-            {signalItems.map((signal, i) => (
-              <div key={i} className="flex gap-3 p-3 bg-slate-900/60 border border-slate-800/60 rounded-lg">
-                <span className="text-base mt-0.5">{signal.icon}</span>
-                <div className="flex-1 min-w-0">
-                  <span className="font-mono text-[10px] text-orange-500/70 uppercase tracking-wider">{signal.label}</span>
-                  <p className="text-xs text-slate-300 mt-0.5 leading-relaxed line-clamp-2">{signal.value}</p>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          {/* Company List */}
+          <div className="lg:col-span-1">
+            <h2 className="font-mono text-xs text-slate-500 tracking-widest uppercase mb-3 flex items-center gap-2">
+              <span className="text-orange-500">//</span> Companies ({result.results.length + result.skipped.length})
+            </h2>
+            
+            {/* Contacted Companies */}
+            <div className="space-y-2 mb-4">
+              {result.results.map((company, i) => (
+                <button
+                  key={i}
+                  onClick={() => setSelectedCompany(i)}
+                  className={`w-full text-left p-3 rounded-lg border transition-all ${
+                    selectedCompany === i
+                      ? 'bg-orange-500/10 border-orange-500/50 text-orange-400'
+                      : 'bg-slate-900/60 border-slate-800/60 text-slate-300 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="font-medium text-sm">{company.company_name}</div>
+                    <div className={`w-2 h-2 rounded-full ${
+                      company.sent ? 'bg-green-500' : 'bg-red-500'
+                    }`} />
+                  </div>
+                  <div className="text-xs text-slate-500 mt-1">
+                    ICP Score: {company.icp_score}% • {company.sent ? 'Sent' : 'Failed'}
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            {/* Skipped Companies */}
+            {result.skipped.length > 0 && (
+              <div>
+                <h3 className="font-mono text-xs text-slate-600 tracking-widest uppercase mb-2">Skipped</h3>
+                <div className="space-y-1">
+                  {result.skipped.slice(0, 5).map((company, i) => (
+                    <div key={i} className="p-2 bg-slate-900/40 border border-slate-800/40 rounded text-xs">
+                      <div className="text-slate-400 font-medium">{company.company_name}</div>
+                      <div className="text-slate-600 text-[10px] mt-1">{company.skip_reason}</div>
+                    </div>
+                  ))}
+                  {result.skipped.length > 5 && (
+                    <div className="text-xs text-slate-600 text-center py-2">
+                      +{result.skipped.length - 5} more skipped
+                    </div>
+                  )}
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Account Brief */}
-        <div className="mb-6 p-5 bg-slate-900/60 border border-slate-800/60 rounded-xl">
-          <h2 className="font-mono text-xs text-slate-500 tracking-widest uppercase mb-3 flex items-center gap-2">
-            <span className="text-orange-500">//</span> Account Brief
-          </h2>
-          <p className="text-sm text-slate-300 leading-relaxed">{result.account_brief}</p>
-        </div>
-
-        {/* Email Preview */}
-        <div className="p-5 bg-slate-900/60 border border-slate-800/60 rounded-xl">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-mono text-xs text-slate-500 tracking-widest uppercase flex items-center gap-2">
-              <span className="text-orange-500">//</span> Email Sent
-            </h2>
-            <span className={`font-mono text-xs px-2 py-1 rounded-full ${
-              result.send_status
-                ? "bg-green-500/10 text-green-400 border border-green-500/20"
-                : "bg-red-500/10 text-red-400 border border-red-500/20"
-            }`}>
-              {result.send_status ? "✓ Delivered" : "✗ Failed"}
-            </span>
+            )}
           </div>
 
-          {/* Subject */}
-          <div className="mb-4 pb-4 border-b border-slate-800">
-            <span className="font-mono text-[10px] text-slate-500 uppercase tracking-wider">Subject</span>
-            <p className="text-sm font-semibold text-slate-100 mt-1">{result.email_subject}</p>
+          {/* Company Details */}
+          <div className="lg:col-span-2">
+            {currentResult ? (
+              <div className="space-y-6">
+                
+                {/* Company Header */}
+                <div className="p-5 bg-slate-900/60 border border-slate-800/60 rounded-xl">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-xl font-bold text-white">{currentResult.company_name}</h3>
+                    <span className={`font-mono text-xs px-3 py-1 rounded-full ${
+                      currentResult.sent
+                        ? "bg-green-500/10 text-green-400 border border-green-500/20"
+                        : "bg-red-500/10 text-red-400 border border-red-500/20"
+                    }`}>
+                      {currentResult.sent ? "✓ Email Sent" : "✗ Send Failed"}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-slate-500">ICP Score:</span>
+                      <span className="ml-2 font-mono text-orange-400">{currentResult.icp_score}%</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500">Contact:</span>
+                      <span className="ml-2 text-slate-300">{currentResult.contact_name || 'N/A'}</span>
+                    </div>
+                  </div>
+                  {currentResult.contact_email && (
+                    <div className="mt-2 text-sm">
+                      <span className="text-slate-500">Email:</span>
+                      <span className="ml-2 text-slate-300">{currentResult.contact_email}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Signals */}
+                {currentResult.top_signals.length > 0 && (
+                  <div className="p-5 bg-slate-900/60 border border-slate-800/60 rounded-xl">
+                    <h4 className="font-mono text-xs text-slate-500 tracking-widest uppercase mb-3 flex items-center gap-2">
+                      <span className="text-orange-500">//</span> Top Signals ({currentResult.top_signals.length})
+                    </h4>
+                    <div className="space-y-2">
+                      {currentResult.top_signals.map((signal, i) => (
+                        <div key={i} className="flex gap-3 p-3 bg-slate-950/60 border border-slate-800/40 rounded-lg">
+                          <span className="text-orange-400 font-mono text-xs mt-0.5">#{i + 1}</span>
+                          <p className="text-xs text-slate-300 leading-relaxed">{signal}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Email Preview */}
+                {currentResult.email_subject && (
+                  <div className="p-5 bg-slate-900/60 border border-slate-800/60 rounded-xl">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="font-mono text-xs text-slate-500 tracking-widest uppercase flex items-center gap-2">
+                        <span className="text-orange-500">//</span> Generated Email & PPT
+                      </h4>
+                      <div className="flex gap-2">
+                        <span className={`font-mono text-xs px-2 py-1 rounded-full ${
+                          currentResult.sent
+                            ? "bg-green-500/10 text-green-400 border border-green-500/20"
+                            : "bg-red-500/10 text-red-400 border border-red-500/20"
+                        }`}>
+                          {currentResult.sent ? "✓ Email Sent" : "✗ Send Failed"}
+                        </span>
+                        {currentResult.ppt_generated && (
+                          <span className="font-mono text-xs px-2 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                            📊 PPT Attached
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Subject */}
+                    <div className="mb-4 pb-4 border-b border-slate-800">
+                      <span className="font-mono text-[10px] text-slate-500 uppercase tracking-wider">Subject</span>
+                      <p className="text-sm font-semibold text-slate-100 mt-1">{currentResult.email_subject}</p>
+                    </div>
+
+                    {/* Body */}
+                    <div className="mb-4">
+                      <span className="font-mono text-[10px] text-slate-500 uppercase tracking-wider">Body</span>
+                      <p className="text-sm text-slate-300 mt-2 leading-relaxed whitespace-pre-wrap">{currentResult.email_body}</p>
+                    </div>
+
+                    {/* PPT Info */}
+                    {currentResult.ppt_generated && (
+                      <div className="mb-4 p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <span className="text-blue-400">📊</span>
+                          <span className="text-sm text-blue-300">Personalized pitch deck generated</span>
+                        </div>
+                        <div className="text-xs text-slate-400 mt-1">
+                          Filename: {currentResult.ppt_filename}
+                        </div>
+                        <div className="text-xs text-slate-500 mt-1">
+                          • Company-specific problem analysis
+                          • Live signals integration
+                          • Custom ROI projections
+                          • Personalized next steps
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Send Status */}
+                    <div className="pt-4 border-t border-slate-800">
+                      <span className="font-mono text-[10px] text-slate-500">{currentResult.send_message}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Agent Log */}
+                <div className="p-5 bg-slate-950/80 border border-slate-800 rounded-xl">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                    <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+                    <div className="w-3 h-3 rounded-full bg-green-500/80" />
+                    <span className="font-mono text-xs text-slate-500 ml-2">agent.log - {currentResult.company_name}</span>
+                  </div>
+                  <div className="space-y-1.5 max-h-60 overflow-y-auto">
+                    {currentResult.log.map((entry, i) => (
+                      <div key={i} className="font-mono text-xs text-slate-300 flex gap-3">
+                        <span className="text-slate-600 select-none">{String(i + 1).padStart(2, "0")}</span>
+                        <span className={
+                          entry.includes("✅") || entry.includes("OK") ? "text-green-400" :
+                          entry.includes("⚠️") || entry.includes("failed") ? "text-yellow-400" :
+                          entry.includes("❌") || entry.includes("error") ? "text-red-400" :
+                          entry.includes("[") ? "text-orange-400" :
+                          "text-slate-300"
+                        }>{entry}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+              </div>
+            ) : (
+              <div className="p-8 bg-slate-900/60 border border-slate-800/60 rounded-xl text-center">
+                <div className="text-slate-500">Select a company to view details</div>
+              </div>
+            )}
           </div>
 
-          {/* Body */}
-          <div>
-            <span className="font-mono text-[10px] text-slate-500 uppercase tracking-wider">Body</span>
-            <p className="text-sm text-slate-300 mt-2 leading-relaxed whitespace-pre-wrap">{result.email_body}</p>
-          </div>
-
-          {/* Send status */}
-          <div className="mt-4 pt-4 border-t border-slate-800">
-            <span className="font-mono text-[10px] text-slate-500">{result.send_message}</span>
-          </div>
         </div>
 
       </div>

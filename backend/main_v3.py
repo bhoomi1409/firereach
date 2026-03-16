@@ -8,7 +8,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
-from orchestrator import run_autonomous_outreach, BatchOutreachResult
+from orchestrator_v3 import run_autonomous_outreach, BatchOutreachResult
 
 app = FastAPI(title="FireReach", version="3.0")
 
