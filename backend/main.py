@@ -23,11 +23,14 @@ from pathlib import Path
 # Get the directory where this script is located
 script_dir = Path(__file__).parent
 
-# Try multiple paths for .env file
+# Try multiple paths for .env file (prioritize .env.local for development)
 env_paths = [
-    script_dir / '.env',  # Same directory as this file
-    script_dir.parent / '.env',  # Parent directory
-    '.env',  # Current working directory
+    script_dir / '.env.local',  # Local development with real keys
+    script_dir / '.env',  # Template file
+    script_dir.parent / '.env.local',  # Parent directory local
+    script_dir.parent / '.env',  # Parent directory template
+    '.env.local',  # Current working directory local
+    '.env',  # Current working directory template
 ]
 
 print(f"DEBUG: Script directory: {script_dir}")
@@ -55,9 +58,11 @@ for env_path in env_paths:
     else:
         print(f"DEBUG: .env file not found at {env_path}")
 
-# Verify key loading
-print(f"DEBUG: GROQ_API_KEY length: {len(os.getenv('GROQ_API_KEY', ''))}")
-print(f"DEBUG: SERP_API_KEY length: {len(os.getenv('SERP_API_KEY', ''))}")
+# Verify key loading (without exposing the keys)
+groq_key = os.getenv('GROQ_API_KEY', '')
+serp_key = os.getenv('SERP_API_KEY', '')
+print(f"DEBUG: GROQ_API_KEY loaded: {'✅' if len(groq_key) > 10 else '❌'}")
+print(f"DEBUG: SERP_API_KEY loaded: {'✅' if len(serp_key) > 10 else '❌'}")
 
 from models import (DiscoverResponse, BatchResult, CompanyResult,
                     SkippedCompany, ParsedICP)

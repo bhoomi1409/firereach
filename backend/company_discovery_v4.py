@@ -15,11 +15,14 @@ from models import ParsedICP, DiscoveredCompany
 import os
 from pathlib import Path
 
-# Try multiple paths for .env file
+# Try multiple paths for .env file (prioritize .env.local)
 env_paths = [
-    '.env',  # Current directory
-    Path(__file__).parent / '.env',  # Same directory as this file
-    Path(__file__).parent.parent / '.env',  # Parent directory
+    '.env.local',  # Local development with real keys
+    '.env',  # Template file
+    Path(__file__).parent / '.env.local',  # Same directory local
+    Path(__file__).parent / '.env',  # Same directory template
+    Path(__file__).parent.parent / '.env.local',  # Parent directory local
+    Path(__file__).parent.parent / '.env',  # Parent directory template
 ]
 
 for env_path in env_paths:
@@ -42,7 +45,8 @@ for env_path in env_paths:
 
 SERPER_KEY = os.getenv("SERP_API_KEY", "")
 
-print(f"DEBUG: Company Discovery - SERPER_KEY length: {len(SERPER_KEY)}")
+# Don't print actual key length for security
+print(f"DEBUG: Company Discovery - SERPER_KEY loaded: {'✅' if len(SERPER_KEY) > 10 else '❌'}")
 
 _BLACKLIST = {
     "google", "apple", "microsoft", "amazon", "meta", "netflix",

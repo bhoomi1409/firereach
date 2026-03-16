@@ -21,9 +21,12 @@ from models import ParsedICP
 
 # Load environment variables
 env_paths = [
-    '.env',  # Current directory
-    Path(__file__).parent / '.env',  # Same directory as this file
-    Path(__file__).parent.parent / '.env',  # Parent directory
+    '.env.local',  # Local development with real keys
+    '.env',  # Template file
+    Path(__file__).parent / '.env.local',  # Same directory local
+    Path(__file__).parent / '.env',  # Same directory template
+    Path(__file__).parent.parent / '.env.local',  # Parent directory local
+    Path(__file__).parent.parent / '.env',  # Parent directory template
 ]
 
 for env_path in env_paths:
@@ -47,8 +50,9 @@ for env_path in env_paths:
 GROQ_KEY = os.getenv("GROQ_API_KEY", "")
 SERPER_KEY = os.getenv("SERP_API_KEY", "")
 
-print(f"DEBUG: ICP Parser - GROQ_KEY length: {len(GROQ_KEY)}")
-print(f"DEBUG: ICP Parser - SERPER_KEY length: {len(SERPER_KEY)}")
+# Don't print actual key lengths for security
+print(f"DEBUG: ICP Parser - GROQ_KEY loaded: {'✅' if len(GROQ_KEY) > 10 else '❌'}")
+print(f"DEBUG: ICP Parser - SERPER_KEY loaded: {'✅' if len(SERPER_KEY) > 10 else '❌'}")
 
 PARSE_SYSTEM = """You extract structured ICP (Ideal Customer Profile) data from free-text service descriptions.
 Return ONLY valid JSON, no markdown, no explanation.
